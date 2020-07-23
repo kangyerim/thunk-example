@@ -1,4 +1,4 @@
-const getAirports = data => ({ type: 'FETCH_AIRPORT', payload: data})
+export const getAirports = data => ({ type: 'FETCH_AIRPORT', payload: data})
 
 const airportReducer = (state = [], action) => {
     switch (action.type) {
