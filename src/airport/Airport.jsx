@@ -1,35 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import './airport.css'
-import {useDispatch, useSelector} from "react-redux";
-import * as API from './store/airport.api'
+import React,{useState, useEffect} from "react";
+import {useSelector, useDispatch} from "react-redux";
 import { debounce } from 'throttle-debounce'
+import axios from 'axios'
+import './airport.css'
+
+export const getAirports = data => ({type: "FETCH_AIRPORT", payload: data})
+
+export const airportReducer = (state = [], action) =>{
+    switch (action.type) {
+        case "FETCH_AIRPORT": return action.payload
+        default: return state
+    }
+}
+export const airportSearch = () => dispatch => {
+    axios.get(`https://argodeep.github.io/React-Redux-Hooks-with-axios-redux-thunk/airport.json`)
+        .then(response => {
+            dispatch(getAirports(response.data))
+        })
+        .catch(error => {throw (error)})
+}
+
 
 const Airport = () => {
-    const [loading, setLoading] = useState(false)
-    const [resultAvailable, setResultAvailable] = useState(false)
+    const [loading , setLoading] = useState(false)
+    const [resultAvailable, setResult] = useState(false)
     const [selected, setSelected] = useState(false)
-    const [airport, setAirport] = useState([])
+    const [airport, setAirport] = useState({})
     const [airports, setAirports] = useState([])
-    const result = useSelector(state => state.fetchAPI)
+    const results = useSelector(state => airportReducer)
     const dispatch = useDispatch()
 
-    const handleInput = (e) => {}
-    const selectAirport = item => {}
+    const handleInput = e =>{ searchAirports(e.target.value.trim().toLowerCase())}
+    const selectAirport = payload => {
+        setSelected(true)
+        setResult(false)
+        setAirport({airport: payload.airport, city: payload.city, iata: payload.iata})
+    }
 
     useEffect(()=>{
-        if(!result.data) fetch()
-        else {
-            if(result.data.lenth > 0) changeTitle()
-        }
+        if(!results.data) fetch()
+        else
+        if(results.data.length > 0) changeTitle()
         if(airport.city !== undefined) changeTitle()
     })
-    let fetch = () => dispatch(API.airportSearch())
-    let fetched = () => { setLoading(false) }
-    let changeTitle = () => document.title = `공항 검색 결과 : ${airport.airport}`
-    let searchAirports = debounce()
-    
-    
-    
+    let fetch = () => dispatch(airportSearch())
+    let fetched = () => setLoading(false)
+    let changeTitle = () => document.title = `공항 검색 결과: ${airport.airport}`
+    let searchAirports = debounce(500, input => {
+        let data = results.data
+        if(input.length < 0) alert(` Error `)
+        switch (input.length) {
+            case 0:
+                setAirports([])
+                setResult(false)
+                setSelected(false)
+                break
+            case 1:
+                setAirports(data.filter(
+                    e => e.airport.charAt(0).toLowerCase()=== input.toLowerCase()
+                        || e.city.toLowerCase().includes(input.toLowerCase())
+                        || e.iata.toLowerCase().includes(input.toLowerCase())))
+                setResult(true)
+                break
+            default:
+                setAirports(data.filter(
+                    e => e.airport.toLowerCase().includes(input.toLowerCase())
+                        || e.city.toLowerCase().includes(input.toLowerCase())
+                        || e.iata.toLowerCase().includes(input.toLowerCase())))
+                setResult(true)
+                break
+        }
+
+    })
+
     return <>
         <div style={{ outline: 'none', border: 0 }}>
             {loading === false &&
@@ -76,5 +119,4 @@ const Airport = () => {
         </div>
     </>
 }
-
 export default Airport
